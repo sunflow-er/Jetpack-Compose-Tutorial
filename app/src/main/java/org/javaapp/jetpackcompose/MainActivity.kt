@@ -1,13 +1,15 @@
 package org.javaapp.jetpackcompose
 
 import android.content.res.Configuration
-import android.media.Image
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -27,6 +30,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.javaapp.jetpackcompose.ui.theme.JetpackComposeTheme
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.materialIcon
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 
 class MainActivity : ComponentActivity() {
@@ -36,9 +45,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             JetpackComposeTheme { // Material Theme
-                Surface(modifier = Modifier.fillMaxSize()) { // Surface
-                    MessageCard(Message("Android", "Jetpack Compose"))
-                }
+                Conversation(SampleData.conversationSample)
             }
 
         }
@@ -67,7 +74,14 @@ fun MessageCard(msg: Message) {
         // Add a horizontal space between the image and the column
         Spacer(modifier = Modifier.width(8.dp))
 
-        Column {
+        // We keep track if the message is expanded or not in this variable
+        var isExpanded by remember { mutableStateOf(false) }
+
+        // surfaceColor will be updated gradually from one color to the other
+        val surfaceColor by animateColorAsState(if (isExpanded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface)
+
+        // We toggle the isExpanded variable when we click on this Column
+        Column(modifier = Modifier.clickable { isExpanded = !isExpanded }) {
             Text(
                 text = msg.author,
                 color = MaterialTheme.colorScheme.secondary, // Material Design - Color
@@ -75,10 +89,19 @@ fun MessageCard(msg: Message) {
             )
             Spacer(modifier = Modifier.height(4.dp)) // Add a vertical space between the author and message texts
 
-            Surface (shape = MaterialTheme.shapes.medium, shadowElevation = 1.dp) { // Material Design - Shape
+            Surface(
+                shape = MaterialTheme.shapes.medium,
+                shadowElevation = 1.dp,
+                color = surfaceColor, // surfaceColor color will be changing gradually
+                modifier = Modifier.animateContentSize().padding(1.dp) // animateContentSize will change the Surface size gradually
+                ) { // Material Design - Shape
                 Text(
                     text = msg.body,
                     modifier = Modifier.padding(all = 4.dp),
+
+                    // If the message is expanded, we display all its content
+                    // otherwise we only display the first line
+                    maxLines = if (isExpanded) Int.MAX_VALUE else 1,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
@@ -87,9 +110,8 @@ fun MessageCard(msg: Message) {
     }
 }
 
-
 @Preview(name = "Light Mode") // 에뮬레이터가 아닌 안드로이드 스튜디오 내에서 미리 볼 수 있음, 매개변수가 없는 Composable 함수에 사용 가능
-@Preview (
+@Preview(
     uiMode = Configuration.UI_MODE_NIGHT_YES,
     showBackground = true,
     name = "Dark Mode"
@@ -105,7 +127,23 @@ fun PreviewMessageCard() {
             )
         }
     }
+}
 
+@Composable
+fun Conversation(messages: List<Message>) {
+    LazyColumn {
+        items(messages) { message ->
+            MessageCard(message)
+        }
+    }
+}
+
+@Preview
+@Composable
+fun PreviewConversation() {
+    JetpackComposeTheme {
+        Conversation(SampleData.conversationSample)
+    }
 }
 
 
